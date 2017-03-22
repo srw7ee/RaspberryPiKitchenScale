@@ -1,8 +1,20 @@
 import tkinter as tk
+from PIL import ImageTk, Image
 
 import sys
 
 TITLE_FONT = ("Helvetica", 18, "bold")
+recipelist = [("Beef Wellington", "HomePage"),
+              ("Caramel", "HomePage"),
+              ("Chardonnay", "HomePage"),
+              ("Cheese Pizza", "HomePage"),
+              ("Chicken Alfredo", "HomePage"),
+              ("Foie Gras", "HomePage"),
+              ("French Fries", "HomePage"),
+              ("Hot Water", "HomePage"),
+              ("Ice Water", "HomePage"),
+              ("Vanilla Pudding", "HomePage")
+]
 
 class ScaleApp(tk.Tk):
 
@@ -46,11 +58,16 @@ class HomePage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.controller = controller
-        label = tk.Label(self, text="This is the start page", font=TITLE_FONT)
+        label = tk.Label(self, text="Welcome!", font=TITLE_FONT)
         label.pack(side="top", fill="x", pady=10)
-
-        button1 = tk.Button(self, text="Go to Page One", command=lambda: controller.show_frame("Recipes"))
-        button2 = tk.Button(self, text="Go to Page Two", command=lambda: controller.show_frame("Recipe"))
+        button1 = tk.Button(self, text="Test", command=lambda: controller.show_frame("Recipes"))
+        image = ImageTk.PhotoImage(file="assets/recipes.png")
+        button1.config(image=image)
+        button1.image = image
+        button2 = tk.Button(self, text="Settings", command=lambda: controller.show_frame("Recipe"))
+        button2img = ImageTk.PhotoImage(file="assets/settings.png")
+        button2.config(image=button2img)
+        button2.image = button2img
         button1.pack()
         button2.pack()
 
@@ -60,10 +77,25 @@ class Recipes(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.controller = controller
-        label = tk.Label(self, text="This is page 1", font=TITLE_FONT)
+        label = tk.Label(self, text="Recipes", font=TITLE_FONT)
         label.pack(side="top", fill="x", pady=10)
-        button = tk.Button(self, text="Go to the start page", command=lambda: controller.show_frame("HomePage"))
-        button.pack()
+        scrollbar = tk.Scrollbar(self)
+        scrollbar.pack(side=tk.RIGHT)
+        listbox = tk.Listbox(self, yscrollcommand=scrollbar.set)
+        for r in recipelist:
+            listbox.insert(tk.END, r[0])
+        listbox.pack()
+        scrollbar.config(command=listbox.yview)
+        homebutton = tk.Button(self, text="Home", command=lambda: controller.show_frame("HomePage"))
+        homeimage = ImageTk.PhotoImage(file="assets/home.png")
+        homebutton.config(image=homeimage)
+        homebutton.image=homeimage
+        homebutton.pack(side="left", padx=10)
+        gobutton = tk.Button(self, text="Go", command=lambda: controller.show_frame("Recipe"))
+        goimage = ImageTk.PhotoImage(file="assets/go.png")
+        gobutton.config(image=goimage)
+        gobutton.image=goimage
+        gobutton.pack(side="right", padx=10)
 
 
 class Recipe(tk.Frame):
