@@ -13,12 +13,11 @@ theLabel.pack()
 progressbar = ttk.Progressbar(root, variable=progress_var, maximum=MAX)
 progressbar.pack(fill=X, expand=1)
 
-
 def progress_function():
     print(getWeightInGrams())
     progress_var.set(getWeightInGrams()/10)
     root.update_idletasks()
-    root.after(100, progress_function)
+    root.after(1, progress_function)
 
 progress_function()
 root.mainloop()

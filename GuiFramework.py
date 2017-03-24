@@ -1,6 +1,8 @@
+##credit to flaticon and icon8 for the icons
 import tkinter as tk
 from PIL import ImageTk, Image
 from win32api import GetSystemMetrics
+from ScaleMethods import getWeightInGrams
 
 import sys
 
@@ -13,14 +15,18 @@ class Step():
 
    def getText(self):
        return self.text
+
    def getWeight(self):
        return self.weight
+
+   def getIngredient(self):
+       return self.ingredient
 
 TITLE_FONT = ("Helvetica", 18, "bold")
 ##RecipeList
 recipelist = [("Pancakes", "Required Ingredients: \n 1 1/2 cups of flour \n 3 1/2 teaspoons of baking powder, 1 teaspoon"
                            " of salt \n 1 tablespoon of white sugar\n 1 1/4 cups of milk\n 1 egg \n 3 tablespoons of "
-                           "melted butter", Step("Place bowl on scale and zero",0,"N/A"), Step("Step2",0,"N/A")),
+                           "melted butter", Step("Place bowl on scale and zero",0,"oil"), Step("Step2",0,"egg")),
               ("Caramel", "HomePage"),
               ("Chardonnay", "HomePage"),
               ("Cheese Pizza", "HomePage"),
@@ -64,6 +70,8 @@ class ScaleApp(tk.Tk):
         self.show_frame("HomePage")
         self.attributes("-fullscreen", True)
         self.bind('<Escape>',sys.exit)
+        self.progress_function(1000)
+        self.mainloop()
 
     def show_frame(self, page_name):
         '''Show a frame for the given page name'''
@@ -72,6 +80,11 @@ class ScaleApp(tk.Tk):
 
     def get_page(self, page_class):
         return self.frames[page_class]
+
+    def progress_function(self,max):
+        print(getWeightInGrams())
+        recipePage = self.get_page("Recipe")
+        recipePage.progress_function(max)
 
 class HomePage(tk.Frame):
 
@@ -125,8 +138,14 @@ class Recipes(tk.Frame):
         value = recipelist[(index)][2].getText()
         recipePage.currentStep.set(value)
         recipePage.recipe = index
-        #print(recipePage.currentStep.get())
-        self.update_idletasks()
+        recipePage.index = index
+        imageName = "assets/"+ recipelist[(index)][2].getIngredient()+".png"
+        recipePage.ingredientimage = tk.PhotoImage(file=imageName)
+        global width
+        while (recipePage.ingredientimage.width() > width / 3):
+            recipePage.ingredientimage = recipePage.ingredientimage.subsample(2, 2)
+        recipePage.imagePanel.configure(image=recipePage.ingredientimage)
+        recipePage.update_idletasks()
         #self.controller.show_frame("Recipe")
 
 class Recipe(tk.Frame):
@@ -140,9 +159,20 @@ class Recipe(tk.Frame):
         ##get width and height
         global width
         global height
+        ##IngredientImage
+        self.ingredientimage = tk.PhotoImage(file="assets/egg.png")
+        while(self.ingredientimage.width()>width/3):
+            self.ingredientimage = self.ingredientimage.subsample(2, 2)
+        self.imagePanel = tk.Label(self, image = self.ingredientimage)
+        self.imagePanel.place(rely=0, relx=0, x=width / 6, y=height / 2, anchor="center")
         ##Instruction
-        self.instructionlabel = tk.Label(self, textvariable = self.currentStep, font=TITLE_FONT,  wraplength=width*.8 )
-        self.instructionlabel.pack(anchor="w", fill="x", pady=height/5)
+        self.instructionlabel = tk.Label(self, textvariable = self.currentStep, font=TITLE_FONT,  wraplength=width/3 )
+        self.instructionlabel.place(rely=0, relx=0, x=width/2, y=height/3, anchor="center")
+        ##Progress
+        self.progress_var = tk.DoubleVar()
+        self.progress_var.set(123)
+        self.progresslabel = tk.Label(self, textvariable=self.progress_var, font=TITLE_FONT, wraplength=width/3)
+        self.progresslabel.place(rely=0, relx=0, x=width*5/6, y=height/2, anchor="center")
         ##HomeButton
         self.homebutton = tk.Button(self, text="Home", command=lambda: controller.show_frame("HomePage"))
         self.homeimage = ImageTk.PhotoImage(file="assets/home.png")
@@ -166,7 +196,7 @@ class Recipe(tk.Frame):
         settingsbutton.image = settingsimage
         settingsbutton.config(height=height / 10, width=width / 3, bg="#3A5199")
         settingsbutton.place(rely=0, relx=1, x=0, y=0, anchor='ne')
-        ##Back and Next buttons
+        ##Next buttons
         nextbutton = tk.Button(self, text="Home", borderwidth=4, command=lambda: self.nextStep())
         nextimage = tk.PhotoImage(file="assets/NextArrowWhite.png")
         nextimage = nextimage.subsample(2, 2)
@@ -174,6 +204,7 @@ class Recipe(tk.Frame):
         nextbutton.image = nextimage
         nextbutton.config(height = height/10, width=width/2, bg="#2F2E33")
         nextbutton.place(rely=1.0, relx=1.0, x=0, y=0, anchor='se')
+        ##Back Button
         self.backbutton = tk.Button(self, text="Home", borderwidth=4, command=lambda: self.prevStep())
         backimage = tk.PhotoImage(file="assets/BackArrowWhite.png")
         backimage = backimage.subsample(2, 2)
@@ -190,8 +221,14 @@ class Recipe(tk.Frame):
             self.controller.show_frame("HomePage")
         else:
             self.index += 1
-            step = recipelist[(self.recipe)][self.index+2].getText()
-            self.currentStep.set(step)
+            step = recipelist[(self.recipe)][self.index+2]
+            self.currentStep.set(step.getText())
+            imageName = "assets/" + step.getIngredient() + ".png"
+            self.ingredientimage = tk.PhotoImage(file=imageName)
+            global width
+            while (self.ingredientimage.width() > width / 3):
+                self.ingredientimage = self.ingredientimage.subsample(2, 2)
+            self.imagePanel.configure(image=self.ingredientimage)
             # print(recipePage.currentRecipe.get())
             self.update_idletasks()
             # self.controller.show_frame("Recipe")
@@ -199,12 +236,24 @@ class Recipe(tk.Frame):
     def prevStep(self):
         if(self.index > 0):
             self.index -= 1
-            step = recipelist[(self.recipe)][self.index + 2].getText()
-            self.currentStep.set(step)
+            step = recipelist[(self.recipe)][self.index + 2]
+            self.currentStep.set(step.getText())
+            imageName = "assets/" + step.getIngredient() + ".png"
+            #print(imageName)
+            self.ingredientimage = tk.PhotoImage(file=imageName)
+            global width
+            while (self.ingredientimage.width() > width / 3):
+                self.ingredientimage = self.ingredientimage.subsample(2, 2)
+            self.imagePanel.configure(image=self.ingredientimage)
             self.update_idletasks()
             # self.controller.show_frame("Recipe")
+
+    def progress_function(self,max):
+        #print(getWeightInGrams())
+        self.progress_var.set(getWeightInGrams() / max)
+        self.update_idletasks()
+        self.controller.after(10, self.controller.progress_function, max)
 
 
 if __name__ == "__main__":
     app = ScaleApp()
-    app.mainloop()
