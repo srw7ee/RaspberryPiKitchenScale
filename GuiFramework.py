@@ -1,4 +1,4 @@
-##credit to flaticon and icon8 for the icons
+##credit to http://icons8.com(egg.png) and https://icons8.com/ (flour.png, oil.png) for the icons
 import tkinter as tk
 from PIL import ImageTk, Image
 from win32api import GetSystemMetrics
@@ -26,7 +26,17 @@ TITLE_FONT = ("Helvetica", 18, "bold")
 ##RecipeList
 recipelist = [("Pancakes", "Required Ingredients: \n 1 1/2 cups of flour \n 3 1/2 teaspoons of baking powder, 1 teaspoon"
                            " of salt \n 1 tablespoon of white sugar\n 1 1/4 cups of milk\n 1 egg \n 3 tablespoons of "
-                           "melted butter", Step("Place bowl on scale and zero",0,"oil"), Step("Step2",0,"egg")),
+                           "melted butter", Step("Place bowl on scale",-1,"oil"),
+                            Step("Add 1 1/2 cups of sifted flour",185,"flour"),
+                            Step("Add 3 1/2 teaspoons of baking powder",14,"flour"),
+                            Step("Add 1 teaspoon of salt",4,"flour"),
+                            Step("Add 1 tablespoon of white sugar",12,"flour"),
+                            Step("Make a well in the center and add pour in 1 1/4 cups of milk",306,"flour"),
+                            Step("Add 1 egg",-1,"flour"), Step("Add 3 tablespoons of melted butter",42,"flour"),
+                            Step("Remove from scale and mix until smooth",-1,"flour"),
+                            Step("Heat and oil cooking surface to medium high",-1,"flour"),
+                            Step("Add 1/4 a cup of batter and brown on each side",-1,"flour"),
+                            Step("Serve hot",-1,"flour")),
               ("Caramel", "HomePage"),
               ("Chardonnay", "HomePage"),
               ("Cheese Pizza", "HomePage"),
@@ -70,7 +80,7 @@ class ScaleApp(tk.Tk):
         self.show_frame("HomePage")
         self.attributes("-fullscreen", True)
         self.bind('<Escape>',sys.exit)
-        self.progress_function(1000)
+        self.progress_function()
         self.mainloop()
 
     def show_frame(self, page_name):
@@ -81,10 +91,10 @@ class ScaleApp(tk.Tk):
     def get_page(self, page_class):
         return self.frames[page_class]
 
-    def progress_function(self,max):
+    def progress_function(self):
         print(getWeightInGrams())
         recipePage = self.get_page("Recipe")
-        recipePage.progress_function(max)
+        recipePage.progress_function()
 
 class HomePage(tk.Frame):
 
@@ -139,6 +149,7 @@ class Recipes(tk.Frame):
         recipePage.currentStep.set(value)
         recipePage.recipe = index
         recipePage.index = index
+        recipePage.max = recipelist[(index)][2].getWeight()
         imageName = "assets/"+ recipelist[(index)][2].getIngredient()+".png"
         recipePage.ingredientimage = tk.PhotoImage(file=imageName)
         global width
@@ -156,22 +167,24 @@ class Recipe(tk.Frame):
         self.currentStep = tk.StringVar()
         self.recipe = 0
         self.index = 0
+        self.max = 1
         ##get width and height
         global width
         global height
         ##IngredientImage
         self.ingredientimage = tk.PhotoImage(file="assets/egg.png")
-        while(self.ingredientimage.width()>width/3):
+        while(self.ingredientimage.width() > width/3):
             self.ingredientimage = self.ingredientimage.subsample(2, 2)
         self.imagePanel = tk.Label(self, image = self.ingredientimage)
         self.imagePanel.place(rely=0, relx=0, x=width / 6, y=height / 2, anchor="center")
         ##Instruction
         self.instructionlabel = tk.Label(self, textvariable = self.currentStep, font=TITLE_FONT,  wraplength=width/3 )
         self.instructionlabel.place(rely=0, relx=0, x=width/2, y=height/3, anchor="center")
-        ##Progress
-        self.progress_var = tk.DoubleVar()
+        ##Progress Percentage
+        self.progress_var = tk.StringVar()
         self.progress_var.set(123)
         self.progresslabel = tk.Label(self, textvariable=self.progress_var, font=TITLE_FONT, wraplength=width/3)
+        self.progresslabel.config(font=("Helvetica", 44, "bold"))
         self.progresslabel.place(rely=0, relx=0, x=width*5/6, y=height/2, anchor="center")
         ##HomeButton
         self.homebutton = tk.Button(self, text="Home", command=lambda: controller.show_frame("HomePage"))
@@ -217,11 +230,13 @@ class Recipe(tk.Frame):
         if(len(recipelist[(self.recipe)]) < self.index+4):
             self.index = 0
             self.currentStep.set(recipelist[(self.recipe)][self.index+2].getText())
+            self.max = recipelist[(self.recipe)][self.index+2].getWeight()
             self.update_idletasks()
             self.controller.show_frame("HomePage")
         else:
             self.index += 1
             step = recipelist[(self.recipe)][self.index+2]
+            self.max = step.getWeight()
             self.currentStep.set(step.getText())
             imageName = "assets/" + step.getIngredient() + ".png"
             self.ingredientimage = tk.PhotoImage(file=imageName)
@@ -238,6 +253,7 @@ class Recipe(tk.Frame):
             self.index -= 1
             step = recipelist[(self.recipe)][self.index + 2]
             self.currentStep.set(step.getText())
+            self.max = step.getWeight()
             imageName = "assets/" + step.getIngredient() + ".png"
             #print(imageName)
             self.ingredientimage = tk.PhotoImage(file=imageName)
@@ -248,11 +264,18 @@ class Recipe(tk.Frame):
             self.update_idletasks()
             # self.controller.show_frame("Recipe")
 
-    def progress_function(self,max):
+    def progress_function(self):
         #print(getWeightInGrams())
-        self.progress_var.set(getWeightInGrams() / max)
-        self.update_idletasks()
-        self.controller.after(10, self.controller.progress_function, max)
+        curr = getWeightInGrams()
+        #print(round(curr / self.max, 2)*100)
+        if((self.max is 1 or self.max is -1) and (curr>abs(self.max))):
+            self.progress_var.set("100")
+        elif((round(curr / self.max, 2)*100)>100):
+            self.progress_var.set("100")
+        else:
+            self.progress_var.set(abs(round(round(curr / self.max, 2)*100,2)))
+            self.update_idletasks()
+        self.controller.after(100, self.controller.progress_function)
 
 
 if __name__ == "__main__":
